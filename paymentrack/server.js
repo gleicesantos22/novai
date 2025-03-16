@@ -215,7 +215,7 @@ app.get('/cartpanda_return', async (req, res) => {
     // Check for payment status (3 indicates paid; adjust if needed)
     const paid = (orderData?.payment_status === 3 || orderData?.status_id === '3');
 
-    return paid ? res.redirect('/thanks.html') : res.redirect('/error.html');
+    return paid ? res.redirect('https://chatbotsai.co/paymentrack/thanks.html') : res.redirect('https://chatbotsai.co/paymentrack/error.html');
   } catch (error) {
     console.error('Error verifying order status:', error.response?.data || error.message);
     return res.redirect('/error.html');
