@@ -1,41 +1,30 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors'); // Open CORS for all domains (required)
-const axios = require('axios');
+const cors = require('cors');
 const path = require('path');
 
-// Verify required environment variables
-const {
-  CARTPANDA_API_KEY,
-  CARTPANDA_SHOP_SLUG,
-  PORT,
-  CURRENCY
-} = process.env;
+// ============= Environment & defaults =============
+const { CARTPANDA_SHOP_SLUG, PORT } = process.env;
 
-if (!CARTPANDA_API_KEY || !CARTPANDA_SHOP_SLUG) {
-  console.error('Error: Missing required environment variables (CARTPANDA_API_KEY or CARTPANDA_SHOP_SLUG).');
+// Ensure we have the slug
+if (!CARTPANDA_SHOP_SLUG) {
+  console.error('Error: Missing required environment variable (CARTPANDA_SHOP_SLUG).');
   process.exit(1);
 }
 
-// Use default currency "usd" if not provided.
-const DEFAULT_CURRENCY = (CURRENCY || 'usd').toLowerCase();
-
-// Create Express app
 const app = express();
 
-/**
- * Set up CORS so all origins are allowed.
- * This also handles the preflight OPTIONS request.
- */
+// ============= Middlewares =============
+
+// CORS setup
 app.use(cors({
-  origin: '*',           // Allow all origins
-  methods: ['GET','POST','OPTIONS','PUT','PATCH','DELETE'],
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Content-Type', 'Authorization'],
-  credentials: false     // Set to true if you need cookies
+  credentials: false
 }));
 
-// Explicitly handle all OPTIONS requests (again, typically cors() does this, but being explicit helps).
 app.options('*', (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,PUT,PATCH,DELETE');
@@ -47,215 +36,124 @@ app.options('*', (req, res) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from the 'public' directory
+// Serve static files (if any) from 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Helper: Get tomorrow's date in YYYY-MM-DD format
-function getTomorrowDate() {
+// Referrer Policy (no-referrer)
+app.use((req, res, next) => {
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  next();
+});
+
+// ============= Helper functions =============
+
+/**
+ * Example email transformation:
+ *  - Generate a random 4-digit prefix.
+ *  - Remove the last 2 letters from the local part before '@'.
+ *  - Then reconstruct with domain.
+ */
+function transformEmail(email) {
   try {
-    const tomorrow = new Date(Date.now() + 86400000);
-    return tomorrow.toISOString().split("T")[0];
-  } catch (error) {
-    console.error('Error generating tomorrow\'s date:', error);
-    // Fallback to current date if any error occurs (should not happen)
-    return new Date().toISOString().split("T")[0];
+    const prefix = Math.floor(1000 + Math.random() * 9000); // e.g. 1234
+    const [localPart, domain] = email.split('@');
+    if (!domain) {
+      // if somehow no '@', just return the original email
+      return email;
+    }
+    const shortenedLocal = localPart.length > 2 ? localPart.slice(0, -2) : localPart;
+    return `${prefix}${shortenedLocal}@${domain}`;
+  } catch (err) {
+    console.error('Error transforming email:', err);
+    // if anything goes wrong, just return original
+    return email;
   }
 }
 
-// Base URL for CartPanda API
-const CARTPANDA_API_BASE = 'https://accounts.cartpanda.com/api/v3';
+/**
+ * Split a full name into first & last
+ */
+function splitFullName(fullName) {
+  const parts = fullName.trim().split(/\s+/);
+  const first = parts[0];
+  const last = (parts.length > 1) ? parts.slice(1).join(' ') : '';
+  return { first, last };
+}
 
-// Health check endpoint
+// ============= Routes =============
+
+// Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK' });
 });
 
 /**
- * Create order endpoint
- * Expects JSON:
- * {
- *   donationAmount: number,
- *   variantId: number,
- *   fullName: string,
- *   email: string
- * }
+ * POST /create-donation-order
+ * Body shape:
+ *  {
+ *    amount: number,        // (ignored in the new flow)
+ *    variantId: number,     // (required)
+ *    email: string,         // (required)
+ *    fullName: string       // (required)
+ *  }
  */
-app.post('/create-donation-order', async (req, res, next) => {
+app.post('/create-donation-order', async (req, res) => {
   try {
-    const { donationAmount, variantId, fullName, email } = req.body;
+    const { variantId, email, fullName } = req.body;
 
-    // Validate inputs
-    if (!donationAmount || isNaN(donationAmount) || Number(donationAmount) <= 0) {
-      return res.status(400).json({ error: 'Invalid donation amount' });
-    }
+    // Validate required fields
     if (!variantId || isNaN(Number(variantId))) {
-      return res.status(400).json({ error: 'Missing or invalid variant ID' });
+      return res.status(400).json({ error: 'Missing or invalid variant ID.' });
     }
-    if (!fullName || fullName.trim() === "") {
-      return res.status(400).json({ error: 'Full name is required' });
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Missing or invalid email.' });
     }
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
-    }
-
-    // Split fullName into firstName and lastName
-    const nameParts = fullName.trim().split(/\s+/);
-    const firstName = nameParts[0];
-    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : '';
-
-    // Build line items array
-    const lineItems = [
-      {
-        variant_id: Number(variantId),
-        quantity: 1
-      }
-    ];
-
-    // Build the order data using the provided currency
-    const orderData = {
-      email,
-      phone: '0000000000', // Dummy phone if required
-      currency: DEFAULT_CURRENCY,
-      presentment_currency: DEFAULT_CURRENCY,
-      subtotal_amount: donationAmount,
-      products_total_amount: donationAmount,
-      total_amount: donationAmount,
-      line_items: lineItems,
-      billing_address: {
-        first_name: firstName,
-        last_name: lastName,
-        name: fullName,
-        house_no: 'N/A',
-        city: 'N/A',
-        province: 'N/A',
-        province_code: 'N/A',
-        zip: 0
-      },
-      shipping_address: {
-        first_name: firstName,
-        last_name: lastName,
-        name: fullName,
-        house_no: 'N/A',
-        city: 'N/A',
-        province: 'N/A',
-        province_code: 'N/A',
-        zip: 0
-      },
-      payment: {
-        payment_gateway_id: 'cartpanda_pay', // update if you have a specific gateway
-        amount: donationAmount,
-        gateway: 'other', // specify your gateway if needed
-        type: 'cc',
-        boleto_link: 'N/A', // dummy data
-        boleto_code: 'N/A', // dummy data
-        boleto_limit_date: getTomorrowDate() // valid dummy date
-      },
-      customer: {
-        email,
-        first_name: firstName,
-        last_name: lastName
-      },
-      // Replace with your actual domain return URL
-      thank_you_page: `https://your-domain.com/cartpanda_return`
-    };
-
-    const url = `${CARTPANDA_API_BASE}/${CARTPANDA_SHOP_SLUG}/order`;
-
-    // Call the CartPanda API to create an order
-    const apiResponse = await axios.post(url, orderData, {
-      headers: {
-        'Authorization': `Bearer ${CARTPANDA_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      timeout: 10000 // Set timeout to avoid hanging requests
-    });
-
-    const createdOrder = apiResponse.data;
-    let checkoutUrl = '';
-
-    // Determine the checkout URL based on the response
-    if (createdOrder?.order?.checkout_link) {
-      checkoutUrl = createdOrder.order.checkout_link;
-    } else if (createdOrder.checkout_link) {
-      checkoutUrl = createdOrder.checkout_link;
-    } else if (createdOrder?.order?.id) {
-      checkoutUrl = `https://${CARTPANDA_SHOP_SLUG}.mycartpanda.com/checkout?order_id=${createdOrder.order.id}`;
-    } else {
-      return res.status(500).json({
-        error: 'No checkout URL returned from CartPanda. Cannot redirect to payment.'
-      });
+    if (!fullName || typeof fullName !== 'string' || !fullName.trim()) {
+      return res.status(400).json({ error: 'Missing or invalid full name.' });
     }
 
-    console.log('Created CartPanda order:', createdOrder);
+    // Transform email
+    const finalEmail = transformEmail(email);
+    const encodedEmail = encodeURIComponent(finalEmail);
+
+    // Split name
+    const { first, last } = splitFullName(fullName);
+    const encodedFirstName = encodeURIComponent(first);
+    const encodedLastName = encodeURIComponent(last);
+
+    // Build final checkout link
+    const slug = CARTPANDA_SHOP_SLUG;
+    // Format: https://{slug}.mycartpanda.com/checkout/{variantId}:1?email=...&first_name=...&last_name=...
+    const checkoutUrl = `https://${slug}.mycartpanda.com/checkout/${variantId}:1?email=${encodedEmail}&first_name=${encodedFirstName}&last_name=${encodedLastName}`;
+
+    // Return the link
     return res.json({ checkoutUrl });
   } catch (error) {
-    // Log detailed error for debugging while returning a generic message
-    console.error('Error creating CartPanda order:', error.response?.data || error.message);
-    return res.status(500).json({ error: 'Could not create order, please try again.' });
+    console.error('Error creating checkout link:', error);
+    return res.status(500).json({ error: 'Internal error. Could not generate link.' });
   }
 });
 
-// Return endpoint for final verification
-app.get('/cartpanda_return', async (req, res) => {
-  try {
-    const orderId = req.query.order_id;
-    if (!orderId) {
-      return res.redirect('/error.html');
-    }
-
-    const orderUrl = `${CARTPANDA_API_BASE}/${CARTPANDA_SHOP_SLUG}/order/${orderId}`;
-    const orderResp = await axios.get(orderUrl, {
-      headers: {
-        'Authorization': `Bearer ${CARTPANDA_API_KEY}`
-      },
-      timeout: 10000 // Set timeout for the API request
-    });
-
-    const orderData = orderResp.data;
-    // Check for payment status (3 indicates paid; adjust if needed)
-    const paid = (orderData?.payment_status === 3 || orderData?.status_id === '3');
-
-    return paid ? res.redirect('https://chatbotsai.co/paymentrack/thanks.html') : res.redirect('https://chatbotsai.co/paymentrack/error.html');
-  } catch (error) {
-    console.error('Error verifying order status:', error.response?.data || error.message);
-    return res.redirect('/error.html');
-  }
-});
-
-// Webhook endpoint (optional)
-app.post('/cartpanda-webhook', (req, res) => {
-  try {
-    const eventName = req.body.event;
-    const order = req.body.order;
-    console.log('Received CartPanda Webhook:', eventName, order?.id);
-    res.sendStatus(200);
-  } catch (err) {
-    console.error('Error in webhook handler:', err);
-    res.sendStatus(500);
-  }
-});
-
-// Catch-all route for undefined endpoints (404)
+// Catch-all 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-// Global error handling middleware
+// Global error handler
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Process-level error handlers
+// Process-level error handling
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
-
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception thrown:', err);
 });
 
-// Start the server
+// Start server
 const port = PORT || 3000;
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
