@@ -432,7 +432,7 @@ process.on('uncaughtException', (err) => {
 });
 
 // Start server
-const port = PORT || 3000;
+const port = PORT || 8080;
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
