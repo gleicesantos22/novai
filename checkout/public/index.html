@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout</title>
+  <style>
+    :root {
+      --primary: #4F46E5;
+      --primary-hover: #4338CA;
+      --background: #F9FAFB;
+      --card-bg: #FFFFFF;
+      --text: #1F2937;
+      --text-muted: #6B7280;
+      --border: #E5E7EB;
+      --error: #EF4444;
+      --success: #10B981;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--background);
+      color: var(--text);
+      line-height: 1.5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .checkout-container {
+      width: 100%;
+      max-width: 480px;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .checkout-header {
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      height: 40px;
+      width: auto;
+    }
+
+    .checkout-body {
+      padding: 24px;
+    }
+
+    .checkout-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background-color: #F9FAFB;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+
+    input::placeholder {
+      color: var(--text-muted);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .error-message {
+      color: var(--error);
+      font-size: 14px;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s ease-in-out infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .button-text {
+      line-height: 1;
+    }
+
+    .checkout-footer {
+      padding: 16px 24px;
+      font-size: 14px;
+      color: var(--text-muted);
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Additional responsive adjustments */
+    @media (max-width: 480px) {
+      .checkout-container {
+        border-radius: 0;
+        box-shadow: none;
+      }
+      
+      body {
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="checkout-container">
+    <div class="checkout-header">
+      <img src="logo.png" alt="Logo" class="logo">
+    </div>
+    
+    <div class="checkout-body">
+      <h1 class="checkout-title">Complete Your Purchase</h1>
+      
+      <form id="checkoutForm">
+        <div class="input-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" placeholder="your@email.com" required>
+          <p class="error-message" id="emailError">Please enter a valid email address</p>
+        </div>
+        
+        <div class="input-group">
+          <label for="fullName">Full Name</label>
+          <input type="text" id="fullName" name="fullName" placeholder="John Doe" required>
+          <p class="error-message" id="nameError">Please enter your full name</p>
+        </div>
+        
+        <div class="input-group">
+          <label for="phoneNumber">Phone Number</label>
+          <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="+1 (123) 456-7890" required>
+          <p class="error-message" id="phoneError">Please enter a valid phone number</p>
+        </div>
+        
+        <button type="submit" id="payButton">
+          <span class="spinner" id="buttonSpinner"></span>
+          <span class="button-text">Pay Now</span>
+        </button>
+      </form>
+    </div>
+    
+    <div class="checkout-footer">
+      Secure checkout powered by CartPanda
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('checkoutForm');
+      const spinner = document.getElementById('buttonSpinner');
+      const buttonText = document.querySelector('.button-text');
+      
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Show loading state
+        spinner.style.display = 'block';
+        buttonText.textContent = 'Processing...';
+        document.getElementById('payButton').disabled = true;
+        
+        // Reset error messages
+        document.querySelectorAll('.error-message').forEach(el => {
+          el.style.display = 'none';
+        });
+        
+        // Get the variant ID from the query string (?id=1, etc.)
+        const urlParams = new URLSearchParams(window.location.search);
+        const variantParam = urlParams.get('id') || ''; // Default to empty if not provided
+        
+        // Get other form data
+        const formData = {
+          email: document.getElementById('email').value,
+          fullName: document.getElementById('fullName').value,
+          phoneNumber: document.getElementById('phoneNumber').value,
+          variantParam: variantParam  // attach the variant ID param to the request
+        };
+        
+        try {
+          // Send data to server
+          const response = await fetch('/create-donation-order', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok && data.checkoutUrl) {
+            // Redirect to CartPanda checkout
+            window.location.href = data.checkoutUrl;
+          } else {
+            // Handle errors
+            alert('Error: ' + (data.error || 'Failed to process checkout'));
+            // Reset button
+            spinner.style.display = 'none';
+            buttonText.textContent = 'Pay Now';
+            document.getElementById('payButton').disabled = false;
+          }
+        } catch (error) {
+          console.error('Checkout error:', error);
+          alert('An error occurred. Please try again later.');
+          // Reset button
+          spinner.style.display = 'none';
+          buttonText.textContent = 'Pay Now';
+          document.getElementById('payButton').disabled = false;
+        }
+      });
+      
+      // Simple form validation
+      const email = document.getElementById('email');
+      const fullName = document.getElementById('fullName');
+      const phoneNumber = document.getElementById('phoneNumber');
+      
+      email.addEventListener('blur', function() {
+        if (!email.value || !email.value.includes('@')) {
+          document.getElementById('emailError').style.display = 'block';
+        } else {
+          document.getElementById('emailError').style.display = 'none';
+        }
+      });
+      
+      fullName.addEventListener('blur', function() {
+        if (!fullName.value.trim()) {
+          document.getElementById('nameError').style.display = 'block';
+        } else {
+          document.getElementById('nameError').style.display = 'none';
+        }
+      });
+      
+      phoneNumber.addEventListener('blur', function() {
+        if (!phoneNumber.value.trim() || phoneNumber.value.length < 10) {
+          document.getElementById('phoneError').style.display = 'block';
+        } else {
+          document.getElementById('phoneError').style.display = 'none';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
