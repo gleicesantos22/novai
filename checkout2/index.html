@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Checkout</title>
+  <meta name="referrer" content="no-referrer">
+  <!-- intl-tel-input styles for flags and layout -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css" />
+  <style>
+    :root {
+      /* Updated primary colors to GoFundMe green */
+      --primary: #02A956;
+      --primary-hover: #02984D;
+      --background: #F9FAFB;
+      --card-bg: #FFFFFF;
+      --text: #1F2937;
+      --text-muted: #6B7280;
+      --border: #E5E7EB;
+      --error: #EF4444;
+      --success: #10B981;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--background);
+      color: var(--text);
+      line-height: 1.5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .checkout-container {
+      width: 100%;
+      max-width: 480px;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+      /* Removed overflow: hidden; to allow dropdown to show outside */
+    }
+
+    .checkout-header {
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      height: 40px;
+      width: auto;
+    }
+
+    .checkout-body {
+      padding: 24px;
+    }
+
+    .checkout-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background-color: #F9FAFB;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(2, 169, 86, 0.15);
+    }
+
+    input::placeholder {
+      color: var(--text-muted);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .error-message {
+      color: var(--error);
+      font-size: 14px;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s ease-in-out infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .button-text {
+      line-height: 1;
+    }
+
+    .checkout-footer {
+      padding: 16px 24px;
+      font-size: 14px;
+      color: var(--text-muted);
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Force scroll in the dropdown if the list is long */
+    .iti.iti--allow-dropdown .iti__country-list {
+      max-height: 200px !important;
+      overflow-y: auto !important;
+    }
+
+    /* Ensure the intl-tel-input container and dropdown appear above other elements */
+    .iti {
+      position: relative;
+      z-index: 1000;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+      .checkout-container {
+        border-radius: 0;
+        box-shadow: none;
+      }
+      body {
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="checkout-container">
+    <div class="checkout-header">
+      <!-- Make sure logo.png is in the same folder. Using "./" to be explicit about relative path -->
+     <!-- <img src="./logo.png" alt="Logo" class="logo"> -->
+    </div>
+    <div class="checkout-body">
+      <h1 class="checkout-title">Complete Your Purchase</h1>
+      <form id="checkoutForm">
+        <div class="input-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" placeholder="your@email.com" required>
+          <p class="error-message" id="emailError">Please enter a valid email address</p>
+        </div>
+
+        <div class="input-group">
+          <label for="fullName">Full Name</label>
+          <input type="text" id="fullName" name="fullName" placeholder="John Doe" required>
+          <p class="error-message" id="nameError">Please enter your full name</p>
+        </div>
+
+        <div class="input-group">
+          <label for="phoneNumber">Phone Number</label>
+          <!-- The intl-tel-input will turn this into a flagged input. -->
+          <input type="tel" id="phoneNumber" name="phoneNumber" required>
+          <p class="error-message" id="phoneError">Please enter a valid phone number</p>
+        </div>
+
+        <button type="submit" id="payButton">
+          <span class="spinner" id="buttonSpinner"></span>
+          <span class="button-text">Pay Now</span>
+        </button>
+      </form>
+    </div>
+    <div class="checkout-footer">
+      Secure checkout powered by CartPanda
+    </div>
+  </div>
+
+  <!-- intl-tel-input JS and dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.min.js"></script>
+
+  <script>
+    const API_BASE_URL = 'https://botcheckout-production.up.railway.app';
+    let iti; // We'll store our intlTelInput instance here
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('checkoutForm');
+      const spinner = document.getElementById('buttonSpinner');
+      const buttonText = document.querySelector('.button-text');
+      const payButton = document.getElementById('payButton');
+
+      const email = document.getElementById('email');
+      const fullName = document.getElementById('fullName');
+      const phoneNumber = document.getElementById('phoneNumber');
+      
+      // Initialize intl-tel-input on our phone input
+      iti = window.intlTelInput(phoneNumber, {
+        initialCountry: "auto",
+        // This attempts to detect the user's country using a simple fetch from ipinfo
+        geoIpLookup: function(success, failure) {
+          fetch('https://ipinfo.io/json')
+            .then(resp => resp.json())
+            .then((ipdata) => success(ipdata.country))
+            .catch(() => success("us")); // fallback to US if there's an error
+        },
+        // Optionally set some preferred countries at the top
+        preferredCountries: ["us", "gb", "ca", "ng"], 
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.min.js"
+      });
+
+      // Form submit
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Show loading state
+        spinner.style.display = 'block';
+        buttonText.textContent = 'Processing...';
+        payButton.disabled = true;
+        
+        // Reset error messages
+        document.querySelectorAll('.error-message').forEach(el => {
+          el.style.display = 'none';
+        });
+        
+        // Get the variant ID from the query string (?id=1, etc.)
+        const urlParams = new URLSearchParams(window.location.search);
+        const variantParam = urlParams.get('id') || ''; // Default to empty if not provided
+        
+        // Build form data
+        const formData = {
+          email: email.value,
+          fullName: fullName.value,
+          // Only send the *national* (local) part of the phone number
+          phoneNumber: iti.getNumber(intlTelInputUtils.numberFormat.NATIONAL),
+          variantParam: variantParam
+        };
+        
+        try {
+          // Send data to the backend API
+          const response = await fetch(API_BASE_URL + '/create-donation-order', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok && data.checkoutUrl) {
+            // Redirect to CartPanda checkout
+            window.location.href = data.checkoutUrl;
+          } else {
+            alert('Error: ' + (data.error || 'Failed to process checkout'));
+            spinner.style.display = 'none';
+            buttonText.textContent = 'Pay Now';
+            payButton.disabled = false;
+          }
+        } catch (error) {
+          console.error('Checkout error:', error);
+          alert('An error occurred. Please try again later.');
+          spinner.style.display = 'none';
+          buttonText.textContent = 'Pay Now';
+          payButton.disabled = false;
+        }
+      });
+
+      // Simple form validations on blur
+      email.addEventListener('blur', function() {
+        if (!email.value || !email.value.includes('@')) {
+          document.getElementById('emailError').style.display = 'block';
+        } else {
+          document.getElementById('emailError').style.display = 'none';
+        }
+      });
+      
+      fullName.addEventListener('blur', function() {
+        if (!fullName.value.trim()) {
+          document.getElementById('nameError').style.display = 'block';
+        } else {
+          document.getElementById('nameError').style.display = 'none';
+        }
+      });
+      
+      phoneNumber.addEventListener('blur', function() {
+        // We check length here, but you could do .isValidNumber() with the plugin
+        const localNum = iti.getNumber(intlTelInputUtils.numberFormat.NATIONAL).replace(/\D/g, '');
+        if (!localNum || localNum.length < 6) {
+          document.getElementById('phoneError').style.display = 'block';
+        } else {
+          document.getElementById('phoneError').style.display = 'none';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
