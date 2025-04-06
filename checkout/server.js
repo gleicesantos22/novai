@@ -32,8 +32,8 @@ app.use(cors({
   credentials: false
 }));
 
-// For preflight requests
-app.options('*', (req, res) => {
+// For preflight requests using a proper wildcard route
+app.options('/*', (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
