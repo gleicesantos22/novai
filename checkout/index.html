@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Checkout</title>
-  <!-- Include intl-tel-input CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css" integrity="sha512-+sbo6hxWZkDR8aI8QR9vC91P8j9vaFh7UOs69mE1Z9uxg4/61Bs3sj2H7FEIVcObhzhEVt4CNEtFJHzZ2YB0FA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- intl-tel-input styles for flags and layout -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css" />
   <style>
     :root {
       --primary: #4F46E5;
@@ -18,12 +18,14 @@
       --error: #EF4444;
       --success: #10B981;
     }
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
       font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
+
     body {
       background-color: var(--background);
       color: var(--text);
@@ -34,6 +36,7 @@
       min-height: 100vh;
       padding: 20px;
     }
+
     .checkout-container {
       width: 100%;
       max-width: 480px;
@@ -42,28 +45,34 @@
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
       overflow: hidden;
     }
+
     .checkout-header {
       display: flex;
       justify-content: center;
       padding: 24px 16px;
       border-bottom: 1px solid var(--border);
     }
+
     .logo {
       height: 40px;
       width: auto;
     }
+
     .checkout-body {
       padding: 24px;
     }
+
     .checkout-title {
       font-size: 24px;
       font-weight: 600;
       margin-bottom: 24px;
       text-align: center;
     }
+
     .input-group {
       margin-bottom: 20px;
     }
+
     label {
       display: block;
       font-size: 14px;
@@ -71,6 +80,7 @@
       margin-bottom: 6px;
       color: var(--text);
     }
+
     input {
       width: 100%;
       padding: 12px 16px;
@@ -80,14 +90,17 @@
       background-color: #F9FAFB;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
+
     input:focus {
       outline: none;
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
     }
+
     input::placeholder {
       color: var(--text-muted);
     }
+
     button {
       width: 100%;
       padding: 14px;
@@ -103,18 +116,22 @@
       justify-content: center;
       align-items: center;
     }
+
     button:hover {
       background-color: var(--primary-hover);
     }
+
     button:active {
       transform: translateY(1px);
     }
+
     .error-message {
       color: var(--error);
       font-size: 14px;
       margin-top: 4px;
       display: none;
     }
+
     .spinner {
       display: none;
       width: 20px;
@@ -125,12 +142,15 @@
       animation: spin 0.8s ease-in-out infinite;
       margin-right: 8px;
     }
+
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
     .button-text {
       line-height: 1;
     }
+
     .checkout-footer {
       padding: 16px 24px;
       font-size: 14px;
@@ -138,6 +158,7 @@
       text-align: center;
       border-top: 1px solid var(--border);
     }
+
     /* Responsive adjustments */
     @media (max-width: 480px) {
       .checkout-container {
@@ -163,17 +184,20 @@
           <input type="email" id="email" name="email" placeholder="your@email.com" required>
           <p class="error-message" id="emailError">Please enter a valid email address</p>
         </div>
+
         <div class="input-group">
           <label for="fullName">Full Name</label>
           <input type="text" id="fullName" name="fullName" placeholder="John Doe" required>
           <p class="error-message" id="nameError">Please enter your full name</p>
         </div>
+
         <div class="input-group">
           <label for="phoneNumber">Phone Number</label>
-          <!-- The intl-tel-input plugin will add a flag and dial code here -->
-          <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="Phone number" required>
+          <!-- The intl-tel-input will turn this into a flagged input. -->
+          <input type="tel" id="phoneNumber" name="phoneNumber" required>
           <p class="error-message" id="phoneError">Please enter a valid phone number</p>
         </div>
+
         <button type="submit" id="payButton">
           <span class="spinner" id="buttonSpinner"></span>
           <span class="button-text">Pay Now</span>
@@ -185,66 +209,67 @@
     </div>
   </div>
 
-  <!-- Include intl-tel-input JS -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js" integrity="sha512-bSMyKkIlDIF0OJpcS5OSvLGkrkaSYehqE1z3rDg6iGejRhIlYQUp78SWdtx1icrRiCw7gqJnuWf3sg76SZZbAg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <!-- Include utils script for formatting/validation -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js" integrity="sha512-oqBBZtm4CcB7CY9YKyLk+eFoCdwk8j5hF7PBYxR9Ghn8VJ7Yey+rFkP2AZkOJk42g/mPN7Fk57b9aM7UQBBfXg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- intl-tel-input JS and dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.min.js"></script>
 
   <script>
-    // Set the API endpoint for your backend.
     const API_BASE_URL = 'https://botcheckout-production.up.railway.app';
-
-    // Initialize the intl-tel-input plugin on the phone number input
-    var phoneInput = document.querySelector("#phoneNumber");
-    var iti = window.intlTelInput(phoneInput, {
-      separateDialCode: true,
-      initialCountry: "auto",
-      geoIpLookup: function(callback) {
-        // Use a free geoIP service; fallback to 'us' if error occurs
-        fetch('https://ipapi.co/json/')
-          .then(response => response.json())
-          .then(data => {
-            callback(data.country_code ? data.country_code.toLowerCase() : 'us');
-          })
-          .catch(() => callback('us'));
-      },
-      utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
-    });
+    let iti; // We'll store our intlTelInput instance here
 
     document.addEventListener('DOMContentLoaded', function() {
       const form = document.getElementById('checkoutForm');
       const spinner = document.getElementById('buttonSpinner');
       const buttonText = document.querySelector('.button-text');
+      const payButton = document.getElementById('payButton');
 
+      const email = document.getElementById('email');
+      const fullName = document.getElementById('fullName');
+      const phoneNumber = document.getElementById('phoneNumber');
+      
+      // Initialize intl-tel-input on our phone input
+      iti = window.intlTelInput(phoneNumber, {
+        // Show all country codes/flags
+        initialCountry: "auto",
+        // This is optional if you want to auto-detect the user's country:
+        // geoIpLookup: function(success, failure) {
+        //   fetch('https://ipinfo.io/json')
+        //     .then(resp => resp.json())
+        //     .then((ipdata) => success(ipdata.country))
+        //     .catch(() => failure());
+        // },
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.min.js"
+      });
+
+      // Form submit
       form.addEventListener('submit', async function(e) {
         e.preventDefault();
-
+        
         // Show loading state
         spinner.style.display = 'block';
         buttonText.textContent = 'Processing...';
-        document.getElementById('payButton').disabled = true;
-
+        payButton.disabled = true;
+        
         // Reset error messages
         document.querySelectorAll('.error-message').forEach(el => {
           el.style.display = 'none';
         });
-
+        
         // Get the variant ID from the query string (?id=1, etc.)
         const urlParams = new URLSearchParams(window.location.search);
-        const variantParam = urlParams.get('id') || '';
-
-        // For phone, only get the national (local) number – without the dial code
-        const nationalNumber = iti.getNumber(intlTelInputUtils.numberFormat.NATIONAL);
-
-        // Get form data; note that the phone number sent is only the national part.
+        const variantParam = urlParams.get('id') || ''; // Default to empty if not provided
+        
+        // Build form data
         const formData = {
-          email: document.getElementById('email').value,
-          fullName: document.getElementById('fullName').value,
-          phoneNumber: nationalNumber,
+          email: email.value,
+          fullName: fullName.value,
+          // Only send the *national* (local) part of the phone number
+          phoneNumber: iti.getNumber(intlTelInputUtils.numberFormat.NATIONAL),
           variantParam: variantParam
         };
-
+        
         try {
+          // Send data to the backend API
           const response = await fetch(API_BASE_URL + '/create-donation-order', {
             method: 'POST',
             headers: {
@@ -252,9 +277,9 @@
             },
             body: JSON.stringify(formData)
           });
-
+          
           const data = await response.json();
-
+          
           if (response.ok && data.checkoutUrl) {
             // Redirect to CartPanda checkout
             window.location.href = data.checkoutUrl;
@@ -262,22 +287,18 @@
             alert('Error: ' + (data.error || 'Failed to process checkout'));
             spinner.style.display = 'none';
             buttonText.textContent = 'Pay Now';
-            document.getElementById('payButton').disabled = false;
+            payButton.disabled = false;
           }
         } catch (error) {
           console.error('Checkout error:', error);
           alert('An error occurred. Please try again later.');
           spinner.style.display = 'none';
           buttonText.textContent = 'Pay Now';
-          document.getElementById('payButton').disabled = false;
+          payButton.disabled = false;
         }
       });
 
-      // Simple form validation
-      const email = document.getElementById('email');
-      const fullName = document.getElementById('fullName');
-      const phoneNumber = document.getElementById('phoneNumber');
-
+      // Simple form validations on blur
       email.addEventListener('blur', function() {
         if (!email.value || !email.value.includes('@')) {
           document.getElementById('emailError').style.display = 'block';
@@ -285,7 +306,7 @@
           document.getElementById('emailError').style.display = 'none';
         }
       });
-
+      
       fullName.addEventListener('blur', function() {
         if (!fullName.value.trim()) {
           document.getElementById('nameError').style.display = 'block';
@@ -293,10 +314,11 @@
           document.getElementById('nameError').style.display = 'none';
         }
       });
-
+      
       phoneNumber.addEventListener('blur', function() {
-        // Validate the phone number using the plugin's API
-        if (!phoneNumber.value.trim() || !iti.isValidNumber()) {
+        // We check length here, but you could do .isValidNumber() with the plugin
+        const localNum = iti.getNumber(intlTelInputUtils.numberFormat.NATIONAL).replace(/\D/g, '');
+        if (!localNum || localNum.length < 6) {
           document.getElementById('phoneError').style.display = 'block';
         } else {
           document.getElementById('phoneError').style.display = 'none';
