@@ -8,17 +8,17 @@ const csvWriter = require('csv-writer').createObjectCsvWriter;
 
 // Environment variables
 const PORT = process.env.PORT || 3000;
-const CARTPANDA_SHOP_SLUG = process.env.CARTPANDA_SHOP_SLUG || 'your-shop-slug';
+const CARTPANDA_SHOP_SLUG = process.env.CARTPANDA_SHOP_SLUG || 'digital-help';
 
 // Define up to 6 variant IDs here
 // For example, replace with your actual variant IDs:
 const variantMapping = {
-  1: 111111,
-  2: 222222,
-  3: 333333,
-  4: 444444,
-  5: 555555,
-  6: 666666
+  1: 177341125,
+  2: 177341188,
+  3: 177341204,
+  4: 177341301,
+  5: 177341319,
+  6: 177341398
 };
 
 // Initialize the app
