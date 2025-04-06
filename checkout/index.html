@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Checkout</title>
   <meta name="referrer" content="no-referrer">
-
   <!-- intl-tel-input styles for flags and layout -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css" />
   <style>
@@ -45,7 +44,7 @@
       background-color: var(--card-bg);
       border-radius: 12px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
+      /* Removed overflow: hidden; to allow dropdown to show outside */
     }
 
     .checkout-header {
@@ -165,6 +164,12 @@
     .iti.iti--allow-dropdown .iti__country-list {
       max-height: 200px !important;
       overflow-y: auto !important;
+    }
+
+    /* Ensure the intl-tel-input container and dropdown appear above other elements */
+    .iti {
+      position: relative;
+      z-index: 1000;
     }
 
     /* Responsive adjustments */
