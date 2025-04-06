@@ -159,6 +159,12 @@
       border-top: 1px solid var(--border);
     }
 
+    /* Force scroll in the dropdown if the list is long */
+    .iti.iti--allow-dropdown .iti__country-list {
+      max-height: 200px !important;
+      overflow-y: auto !important;
+    }
+
     /* Responsive adjustments */
     @media (max-width: 480px) {
       .checkout-container {
@@ -174,7 +180,8 @@
 <body>
   <div class="checkout-container">
     <div class="checkout-header">
-      <img src="logo.png" alt="Logo" class="logo">
+      <!-- Make sure logo.png is in the same folder. Using "./" to be explicit about relative path -->
+      <img src="./logo.png" alt="Logo" class="logo">
     </div>
     <div class="checkout-body">
       <h1 class="checkout-title">Complete Your Purchase</h1>
@@ -229,15 +236,16 @@
       
       // Initialize intl-tel-input on our phone input
       iti = window.intlTelInput(phoneNumber, {
-        // Show all country codes/flags
         initialCountry: "auto",
-        // This is optional if you want to auto-detect the user's country:
-        // geoIpLookup: function(success, failure) {
-        //   fetch('https://ipinfo.io/json')
-        //     .then(resp => resp.json())
-        //     .then((ipdata) => success(ipdata.country))
-        //     .catch(() => failure());
-        // },
+        // This attempts to detect the user's country using a simple fetch from ipinfo
+        geoIpLookup: function(success, failure) {
+          fetch('https://ipinfo.io/json')
+            .then(resp => resp.json())
+            .then((ipdata) => success(ipdata.country))
+            .catch(() => success("us")); // fallback to US if there's an error
+        },
+        // Optionally set some preferred countries at the top
+        preferredCountries: ["us", "gb", "ca", "ng"], 
         utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.min.js"
       });
 
