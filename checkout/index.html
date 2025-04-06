@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Checkout</title>
+  <!-- Include intl-tel-input CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css" integrity="sha512-+sbo6hxWZkDR8aI8QR9vC91P8j9vaFh7UOs69mE1Z9uxg4/61Bs3sj2H7FEIVcObhzhEVt4CNEtFJHzZ2YB0FA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     :root {
       --primary: #4F46E5;
@@ -168,7 +170,8 @@
         </div>
         <div class="input-group">
           <label for="phoneNumber">Phone Number</label>
-          <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="+1 (123) 456-7890" required>
+          <!-- The intl-tel-input plugin will add a flag and dial code here -->
+          <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="Phone number" required>
           <p class="error-message" id="phoneError">Please enter a valid phone number</p>
         </div>
         <button type="submit" id="payButton">
@@ -182,42 +185,66 @@
     </div>
   </div>
 
+  <!-- Include intl-tel-input JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js" integrity="sha512-bSMyKkIlDIF0OJpcS5OSvLGkrkaSYehqE1z3rDg6iGejRhIlYQUp78SWdtx1icrRiCw7gqJnuWf3sg76SZZbAg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Include utils script for formatting/validation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js" integrity="sha512-oqBBZtm4CcB7CY9YKyLk+eFoCdwk8j5hF7PBYxR9Ghn8VJ7Yey+rFkP2AZkOJk42g/mPN7Fk57b9aM7UQBBfXg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
   <script>
-  
+    // Set the API endpoint for your backend.
     const API_BASE_URL = 'https://botcheckout-production.up.railway.app';
+
+    // Initialize the intl-tel-input plugin on the phone number input
+    var phoneInput = document.querySelector("#phoneNumber");
+    var iti = window.intlTelInput(phoneInput, {
+      separateDialCode: true,
+      initialCountry: "auto",
+      geoIpLookup: function(callback) {
+        // Use a free geoIP service; fallback to 'us' if error occurs
+        fetch('https://ipapi.co/json/')
+          .then(response => response.json())
+          .then(data => {
+            callback(data.country_code ? data.country_code.toLowerCase() : 'us');
+          })
+          .catch(() => callback('us'));
+      },
+      utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
+    });
 
     document.addEventListener('DOMContentLoaded', function() {
       const form = document.getElementById('checkoutForm');
       const spinner = document.getElementById('buttonSpinner');
       const buttonText = document.querySelector('.button-text');
-      
+
       form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         // Show loading state
         spinner.style.display = 'block';
         buttonText.textContent = 'Processing...';
         document.getElementById('payButton').disabled = true;
-        
+
         // Reset error messages
         document.querySelectorAll('.error-message').forEach(el => {
           el.style.display = 'none';
         });
-        
+
         // Get the variant ID from the query string (?id=1, etc.)
         const urlParams = new URLSearchParams(window.location.search);
-        const variantParam = urlParams.get('id') || ''; // Default to empty if not provided
-        
-        // Get form data
+        const variantParam = urlParams.get('id') || '';
+
+        // For phone, only get the national (local) number – without the dial code
+        const nationalNumber = iti.getNumber(intlTelInputUtils.numberFormat.NATIONAL);
+
+        // Get form data; note that the phone number sent is only the national part.
         const formData = {
           email: document.getElementById('email').value,
           fullName: document.getElementById('fullName').value,
-          phoneNumber: document.getElementById('phoneNumber').value,
-          variantParam: variantParam  // attach the variant ID param to the request
+          phoneNumber: nationalNumber,
+          variantParam: variantParam
         };
-        
+
         try {
-          // Send data to the backend API using the defined API_BASE_URL
           const response = await fetch(API_BASE_URL + '/create-donation-order', {
             method: 'POST',
             headers: {
@@ -225,9 +252,9 @@
             },
             body: JSON.stringify(formData)
           });
-          
+
           const data = await response.json();
-          
+
           if (response.ok && data.checkoutUrl) {
             // Redirect to CartPanda checkout
             window.location.href = data.checkoutUrl;
@@ -245,12 +272,12 @@
           document.getElementById('payButton').disabled = false;
         }
       });
-      
+
       // Simple form validation
       const email = document.getElementById('email');
       const fullName = document.getElementById('fullName');
       const phoneNumber = document.getElementById('phoneNumber');
-      
+
       email.addEventListener('blur', function() {
         if (!email.value || !email.value.includes('@')) {
           document.getElementById('emailError').style.display = 'block';
@@ -258,7 +285,7 @@
           document.getElementById('emailError').style.display = 'none';
         }
       });
-      
+
       fullName.addEventListener('blur', function() {
         if (!fullName.value.trim()) {
           document.getElementById('nameError').style.display = 'block';
@@ -266,9 +293,10 @@
           document.getElementById('nameError').style.display = 'none';
         }
       });
-      
+
       phoneNumber.addEventListener('blur', function() {
-        if (!phoneNumber.value.trim() || phoneNumber.value.length < 10) {
+        // Validate the phone number using the plugin's API
+        if (!phoneNumber.value.trim() || !iti.isValidNumber()) {
           document.getElementById('phoneError').style.display = 'block';
         } else {
           document.getElementById('phoneError').style.display = 'none';
