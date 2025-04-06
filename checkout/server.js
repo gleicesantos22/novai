@@ -6,9 +6,9 @@ const { open } = require('sqlite');
 const fs = require('fs');
 const csvWriter = require('csv-writer').createObjectCsvWriter;
 
-// Environment variables
-const PORT = process.env.PORT || 3000;
-const CARTPANDA_SHOP_SLUG = process.env.CARTPANDA_SHOP_SLUG || 'digital-help';
+// Hardcoded configuration values
+const PORT = 3000;
+const CARTPANDA_SHOP_SLUG = 'digital-help';
 
 // Define up to 6 variant IDs here
 const variantMapping = {
