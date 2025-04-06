@@ -11,7 +11,6 @@ const PORT = process.env.PORT || 3000;
 const CARTPANDA_SHOP_SLUG = process.env.CARTPANDA_SHOP_SLUG || 'digital-help';
 
 // Define up to 6 variant IDs here
-// For example, replace with your actual variant IDs:
 const variantMapping = {
   1: 177341125,
   2: 177341188,
@@ -23,6 +22,45 @@ const variantMapping = {
 
 // Initialize the app
 const app = express();
+
+// Enable CORS for any domain
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false
+}));
+
+// For preflight requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  return res.sendStatus(200);
+});
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static files (if needed)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Security header
+app.use((req, res, next) => {
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  next();
+});
+
+// Main checkout page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK' });
+});
 
 // Database setup
 let db;
@@ -52,44 +90,6 @@ async function initializeDatabase() {
   console.log('Database initialized');
 }
 
-// Middlewares
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Content-Type', 'Authorization'],
-  credentials: false
-}));
-
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-  return res.sendStatus(200);
-});
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Security header
-app.use((req, res, next) => {
-  res.setHeader('Referrer-Policy', 'no-referrer');
-  next();
-});
-
-// Main checkout page
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK' });
-});
-
 // Handle checkout form submission
 app.post('/create-donation-order', async (req, res) => {
   try {
@@ -115,24 +115,24 @@ app.post('/create-donation-order', async (req, res) => {
       chosenVariantId = variantMapping[1];
     }
     
-    // Store in database
+    // Store order in database
     await db.run(
       'INSERT INTO orders (email, fullName, phoneNumber) VALUES (?, ?, ?)',
       [email, fullName, phoneNumber]
     );
     
-    // Split name for cartpanda
+    // Split full name for CartPanda
     const nameParts = fullName.trim().split(/\s+/);
     const firstName = nameParts[0];
     const lastName = (nameParts.length > 1) ? nameParts.slice(1).join(' ') : '';
     
-    // Encode parameters
+    // Encode parameters for URL
     const encodedEmail = encodeURIComponent(email);
     const encodedFirstName = encodeURIComponent(firstName);
     const encodedLastName = encodeURIComponent(lastName);
     const encodedPhoneNumber = encodeURIComponent(phoneNumber);
     
-    // Build CartPanda checkout URL, using the chosenVariantId
+    // Build CartPanda checkout URL using the chosen variant ID
     const checkoutUrl = `https://${CARTPANDA_SHOP_SLUG}.mycartpanda.com/checkout/${chosenVariantId}:1?email=${encodedEmail}&first_name=${encodedFirstName}&last_name=${encodedLastName}&phone=${encodedPhoneNumber}`;
     
     return res.json({ checkoutUrl });
@@ -145,7 +145,6 @@ app.post('/create-donation-order', async (req, res) => {
 // Admin access page to view orders
 app.get('/access', async (req, res) => {
   try {
-    // We'll embed the HTML directly rather than using a separate file
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
@@ -327,9 +326,8 @@ app.get('/access/download-csv', async (req, res) => {
     // Write records to CSV
     await writer.writeRecords(orders);
     
-    // Send the file
+    // Send the file and delete it after sending
     res.download(csvFilePath, 'orders.csv', (err) => {
-      // Delete the temp file after sending
       if (fs.existsSync(csvFilePath)) {
         fs.unlinkSync(csvFilePath);
       }
