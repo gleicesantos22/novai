@@ -412,6 +412,151 @@ app.post('/create-donation-order', async (req, res) => {
   }
 });
 
+// ============= New Added Routes =============
+
+// Secret token for validation
+const SECRET_TOKEN = 'dimehook3943000493';
+
+// Alternate HTML content
+const ALT_HTML = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Complete</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0;font-family:'Arial',sans-serif}
+        @font-face{font-family:'CircularXXWeb';src:url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-brands-400.woff2') format('woff2')}
+        body{background-color:#f8f7f4;font-family:'CircularXXWeb','Arial',sans-serif;color:#333;line-height:1.5}
+        .container{max-width:600px;margin:0 auto;padding:20px}
+        .logo-container{text-align:center;margin-bottom:20px;width:140px;height:45px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;overflow:hidden}
+        .logo-container img{max-width:100%;max-height:100%;object-fit:contain}
+        .main-card{background-color:#fff;border-radius:20px;padding:30px 20px;text-align:center;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+        .profile-image{width:80px;height:80px;border-radius:50%;margin:0 auto 20px;overflow:hidden;background-color:#f2f2f2;display:flex;align-items:center;justify-content:center}
+        .profile-image img{width:100%;height:100%;object-fit:cover}
+        h1{font-size:24px;font-weight:600;margin-bottom:15px}
+        .donation-info{display:flex;align-items:center;justify-content:center;margin-top:15px}
+        .donation-icon{color:#008044;font-size:18px;margin-right:10px}
+        .sharing-card{background-color:#fff;border-radius:20px;padding:30px 20px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+        h2{font-size:20px;font-weight:600;margin-bottom:15px}
+        .sharing-text{color:#666;font-size:16px;margin-bottom:20px}
+        .progress-container{margin:25px 0;position:relative}
+        .progress-bar{height:8px;border-radius:4px;background-color:#e0e0e0;position:relative}
+        .progress-fill{position:absolute;top:0;left:0;height:100%;width:0;border-radius:4px;background:linear-gradient(to right,#00b25a,#00b25a)}
+        .amount-raised{text-align:left;font-weight:700;margin-top:10px}
+        .continue-btn{display:block;text-align:center;padding:10px 20px;background-color:#333;color:#fff;text-decoration:none;font-size:16px;font-weight:500;border-radius:5px;margin:20px auto;max-width:200px}
+        @media(max-width:480px){
+            .container{padding:15px}
+            h1{font-size:20px}
+            h2{font-size:18px}
+            .sharing-text{font-size:14px}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <img src="https://www.sunbeamsplay.org.uk/uploads/page/4/help-us-m3XJ.png" alt="Logo">
+        </div>
+        <div class="main-card">
+            <div class="profile-image">
+                <img src="https://helpineed.space/page/jhon.png" alt="Profile Image">
+            </div>
+            <h1>You're joining 0 donors making an impact</h1>
+            <div class="donation-info">
+                <i class="fa-solid fa-circle-check donation-icon"></i>
+                <span>You donated $0</span>
+            </div>
+        </div>
+        <div class="sharing-card">
+            <h2>Reach more donors by sharing</h2>
+            <p class="sharing-text">We've written tailored messages and auto-generated posters based on the fundraiser story for you to share</p>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="amount-raised">$0 raised</div>
+            </div>
+        </div>
+        <a href="https://google.com" class="continue-btn">Return Home</a>
+    </div>
+    <script>
+        function getCookie(name){
+            return document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith(name+'='))?.split('=')[1]||null;
+        }
+        function getExtraAmount(percentage){
+            if(percentage<10){
+                return percentage+(percentage*100);
+            }else{
+                const firstDigit=parseInt(percentage.toString()[0],10);
+                return percentage+7+(firstDigit*100);
+            }
+        }
+        document.addEventListener('DOMContentLoaded',()=>{
+            const amount=getCookie('paymentAmount')||'0';
+            const donationSpan=document.querySelector('.donation-info span');
+            if(donationSpan)donationSpan.textContent='You donated $'+amount;
+
+            const totalGoal=100000;
+            const totalDonorsAt100=2930;
+            let donationPercentage=47;
+
+            try{
+                const cookieValue=getCookie('myDonationCookie');
+                if(cookieValue){
+                    const cookieObj=JSON.parse(decodeURIComponent(cookieValue));
+                    if(cookieObj.start){
+                        const diffMs=Date.now()-parseInt(cookieObj.start,10);
+                        const increments=Math.floor(Math.floor(diffMs/3600000)/6);
+                        donationPercentage+=increments;
+                    }
+                    if(typeof cookieObj.incrementsUsed==='number'){
+                        donationPercentage+=cookieObj.incrementsUsed;
+                    }
+                }
+            }catch(e){}
+
+            const displayDonationPercentage=Math.min(donationPercentage,100);
+            const currentRaised=Math.round((totalGoal*displayDonationPercentage)/100);
+            const currentDonors=Math.round((totalDonorsAt100*displayDonationPercentage)/100);
+            const extraAmount=getExtraAmount(displayDonationPercentage);
+            const finalDisplayedRaised=currentRaised+extraAmount;
+
+            document.querySelector('.amount-raised').textContent=
+                '$'+finalDisplayedRaised.toLocaleString()+' raised';
+            document.querySelector('.progress-fill').style.width=
+                displayDonationPercentage+'%';
+            document.querySelector('.main-card h1').textContent=
+                "You're joining "+currentDonors.toLocaleString()+" donors making an impact";
+        });
+    </script>
+</body>
+</html>
+`.trim();
+
+/**
+ * POST /api/validate
+ * Body: { value: string }
+ * Response: { allowed: boolean, altHtml?: string }
+ */
+app.post('/api/validate', (req, res) => {
+  try {
+    const { value } = req.body ?? {};
+    if (value === SECRET_TOKEN) {
+      // User is "special" → send the hidden content
+      res.json({ allowed: true, altHtml: ALT_HTML });
+    } else {
+      // Not special → just say "no"
+      res.json({ allowed: false });
+    }
+  } catch (error) {
+    console.error('Error in validation endpoint:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Catch-all 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
