@@ -1217,10 +1217,69 @@
 
 
 
+<!-- ========== PAGE 2  (second domain)  ========== -->
+<script>
+/* This runs as soon as the page opens on the new domain.
+   It pulls the utm_* params we just sent and recreates the
+   exact same cookies, good for one year. */
+document.addEventListener("DOMContentLoaded", function () {
+
+  function setCookie(name, value, maxAgeSeconds) {
+    document.cookie = name + "=" + value + "; path=/; max-age=" + maxAgeSeconds;
+  }
+
+  var params   = new URLSearchParams(window.location.search);
+  var mdcParam = params.get('utm_mdc');
+  var viParam  = params.get('utm_vi');
+  var oneYear  = 31536000;
+
+  if (mdcParam) {
+    try {
+      var mdcDecoded = decodeURIComponent(mdcParam);
+      JSON.parse(mdcDecoded);                   // quick sanity check
+      setCookie('myDonationCookie', mdcDecoded, oneYear);
+    } catch (e) {
+      console.log("utm_mdc parse issue:", e);
+    }
+  }
+
+  if (viParam) {
+    try {
+      var viDecoded = decodeURIComponent(viParam);
+      var viData = JSON.parse(viDecoded);
+      setCookie('visitorInfo', viDecoded, oneYear);
+      
+      var paymentSuccessValue = "";
+      if (viData.visited === "yes" && viData.fbclid === "yes") {
+        paymentSuccessValue = "dimehook3943000493";
+      } else {
+        paymentSuccessValue = Math.floor(Math.random() * (100000 - 50000 + 1)) + 50000;
+      }
+      setCookie('paymentsuccess', paymentSuccessValue, oneYear);
+    } catch (e) {
+      console.log("utm_vi parse issue:", e);
+    }
+  }
+});
+</script>
 
 
 
 
+
+<script>
+// Save the chosen amount to a cookie the moment the user clicks “Donate now”
+document.addEventListener("DOMContentLoaded", () => {
+  const donateNowBtn = document.getElementById("donate-now");
+
+  donateNowBtn.addEventListener("click", () => {
+    if (typeof selectedAmount === "number" && selectedAmount > 0) {
+      const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString(); // 1 year
+      document.cookie = `paymentAmount=${selectedAmount}; expires=${expires}; path=/; SameSite=Lax`;
+    }
+  }, { capture: true });   // runs before other click handlers
+});
+</script>
 
 
 
