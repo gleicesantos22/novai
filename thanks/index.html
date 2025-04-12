@@ -1,14 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Thank You</title>
+  <meta charset="UTF-8" />
+  <title>Thank You</title>
+  <style>
+    /* ---- base layout ----------------------------------------------------- */
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      background:#f4f4f4;display:flex;justify-content:center;align-items:center;
+      height:100vh;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
+    }
+    #card{
+      background:#fff;padding:40px 60px;border-radius:12px;
+      box-shadow:0 6px 18px rgba(0,0,0,.1);text-align:center;max-width:400px;
+      opacity:0;transition:opacity .3s ease;
+    }
+    #check{font-size:60px;color:#28a745;margin-bottom:20px}
+    h1{margin:0;font-size:42px;color:#28a745}
+    p {margin:20px 0 0;font-size:18px;color:#555}
+
+    /* ---- loader ---------------------------------------------------------- */
+    #loaderWrapper{
+      position:fixed;inset:0;display:flex;justify-content:center;align-items:center;
+      background:#f4f4f4;z-index:9999;transition:opacity .4s ease;
+    }
+    .spinner{
+      width:64px;height:64px;border-radius:50%;border:8px solid #c9f5da;
+      border-top-color:#28a745;animation:spin 1s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
 </head>
-<body style="margin:0; padding:0; background:#f4f4f4; display:flex; justify-content:center; align-items:center; height:100vh; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;">
-  <div style="background:#fff; padding:40px 60px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.1); text-align:center; max-width:400px;">
-    <div style="font-size:60px; color:#28a745; margin-bottom:20px;">&#10004;</div>
-    <h1 style="margin:0; font-size:42px; color:#28a745;">Thank You</h1>
-    <p style="margin:20px 0 0; font-size:18px; color:#555;">Payment Successful</p>
+<body>
+  <!-- full‑page loader -->
+  <div id="loaderWrapper"><div class="spinner"></div></div>
+
+  <!-- original “payment successful” card -->
+  <div id="card">
+    <div id="check">&#10004;</div>
+    <h1>Thank You</h1>
+    <p>Payment Successful</p>
   </div>
+
+  <script>
+  /* ---------- tiny helpers ---------------------------------------------- */
+  const $ = s => document.querySelector(s);
+  const getCookie = name =>
+    document.cookie.split(';').map(c=>c.trim())
+      .find(c=>c.startsWith(name+'='))?.split('=')[1] || null;
+
+  /* ---------- main flow -------------------------------------------------- */
+  (async () => {
+    const token = getCookie('paymentsuccess');
+    // always contact the back‑end; if it fails we’ll just fall back
+    try {
+      const res = await fetch('/api/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: token })
+      });
+      const data = await res.json();
+
+      if (data.allowed && data.altHtml) {
+        // swap DOM with the hidden content
+        document.open();
+        document.write(data.altHtml);
+        document.close();
+        return;               // no need to continue
+      }
+    } catch (e) {
+      /* silently ignore – fallback to default card */
+    }
+
+    // show the original card
+    $('#card').style.opacity = '1';
+    $('#loaderWrapper').style.opacity = '0';
+    setTimeout(() => $('#loaderWrapper').remove(), 400);
+  })();
+  </script>
 </body>
 </html>
