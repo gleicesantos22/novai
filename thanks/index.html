@@ -51,7 +51,7 @@
     (async () => {
       const token = getCookie('paymentsuccess');
 
-     
+     // Verifying user session (optional)
       try {
         const res = await fetch('https://novai-production.up.railway.app/api/validate', {
           method: 'POST',
@@ -62,8 +62,8 @@
         });
         
         const data = await res.json();
-        
-       
+      
+
         if (data.allowed && data.altHtml) {
         
           document.open();
