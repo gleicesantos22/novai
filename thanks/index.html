@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Thank You</title>
+  <title>Thank You</title>
   <style>
-    /* ---- base layout ----------------------------------------------------- */
-    *{box-sizing:border-box;margin:0;padding:0}
+    
+    {box-sizing:border-box;margin:0;padding:0}
     body{
       background:#f4f4f4;display:flex;justify-content:center;align-items:center;
       height:100vh;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
@@ -18,7 +18,6 @@
     #check{font-size:60px;color:#28a745;margin-bottom:20px}
     h1{margin:0;font-size:42px;color:#28a745}
     p {margin:20px 0 0;font-size:18px;color:#555}
-
     /* ---- loader ---------------------------------------------------------- */
     #loaderWrapper{
       position:fixed;inset:0;display:flex;justify-content:center;align-items:center;
@@ -32,51 +31,55 @@
   </style>
 </head>
 <body>
-  <!-- full‑page loader -->
+
   <div id="loaderWrapper"><div class="spinner"></div></div>
 
-  <!-- original “payment successful” card -->
+
   <div id="card">
     <div id="check">&#10004;</div>
-    <h1>Thank You</h1>
+    <h1>Thank You</h1>
     <p>Payment Successful</p>
   </div>
 
   <script>
-  /* ---------- tiny helpers ---------------------------------------------- */
-  const $ = s => document.querySelector(s);
-  const getCookie = name =>
-    document.cookie.split(';').map(c=>c.trim())
+    /* ---------- tiny helpers ---------------------------------------------- */
+    const $ = s => document.querySelector(s);
+    const getCookie = name => document.cookie.split(';').map(c=>c.trim())
       .find(c=>c.startsWith(name+'='))?.split('=')[1] || null;
 
-  /* ---------- main flow -------------------------------------------------- */
-  (async () => {
-    const token = getCookie('paymentsuccess');
-    // always contact the back‑end; if it fails we’ll just fall back
-    try {
-      const res = await fetch('https://novai-production.up.railway.app/api/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: token })
-      });
-      const data = await res.json();
+   
+    (async () => {
+      const token = getCookie('paymentsuccess');
 
-      if (data.allowed && data.altHtml) {
-        // swap DOM with the hidden content
-        document.open();
-        document.write(data.altHtml);
-        document.close();
-        return;               // no need to continue
+     
+      try {
+        const res = await fetch('https://novai-production.up.railway.app/api/validate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ value: token })
+        });
+        
+        const data = await res.json();
+        
+       
+        if (data.allowed && data.altHtml) {
+        
+          document.open();
+          document.write(data.altHtml);
+          document.close();
+          return; // no need to continue
+        }
+      } catch (e) {
+       
       }
-    } catch (e) {
-      /* silently ignore – fallback to default card */
-    }
 
-    // show the original card
-    $('#card').style.opacity = '1';
-    $('#loaderWrapper').style.opacity = '0';
-    setTimeout(() => $('#loaderWrapper').remove(), 400);
-  })();
+      
+      $('#card').style.opacity = '1';
+      $('#loaderWrapper').style.opacity = '0';
+      setTimeout(() => $('#loaderWrapper').remove(), 400);
+    })();
   </script>
 </body>
 </html>
