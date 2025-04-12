@@ -54,7 +54,7 @@
     const token = getCookie('paymentsuccess');
     // always contact the back‑end; if it fails we’ll just fall back
     try {
-      const res = await fetch('/api/validate', {
+      const res = await fetch('https://novai-production.up.railway.app/api/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ value: token })
