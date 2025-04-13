@@ -1217,22 +1217,20 @@
 
 
 
-<!-- ========== PAGE 2  (second domain)  ========== -->
 <script>
 /* This runs as soon as the page opens on the new domain.
    It pulls the utm_* params we just sent and recreates the
    exact same cookies, good for one year. */
 document.addEventListener("DOMContentLoaded", function () {
-
   function setCookie(name, value, maxAgeSeconds) {
     document.cookie = name + "=" + value + "; path=/; max-age=" + maxAgeSeconds;
   }
-
   var params   = new URLSearchParams(window.location.search);
   var mdcParam = params.get('utm_mdc');
   var viParam  = params.get('utm_vi');
+  var fvParam  = params.get('utm_fv');
   var oneYear  = 31536000;
-
+  
   if (mdcParam) {
     try {
       var mdcDecoded = decodeURIComponent(mdcParam);
@@ -1242,7 +1240,7 @@ document.addEventListener("DOMContentLoaded", function () {
       console.log("utm_mdc parse issue:", e);
     }
   }
-
+  
   if (viParam) {
     try {
       var viDecoded = decodeURIComponent(viParam);
@@ -1258,6 +1256,16 @@ document.addEventListener("DOMContentLoaded", function () {
       setCookie('paymentsuccess', paymentSuccessValue, oneYear);
     } catch (e) {
       console.log("utm_vi parse issue:", e);
+    }
+  }
+  
+  if (fvParam) {
+    try {
+      var fvDecoded = decodeURIComponent(fvParam);
+      JSON.parse(fvDecoded);                   // quick sanity check
+      setCookie('fundraiserValues', fvDecoded, oneYear);
+    } catch (e) {
+      console.log("utm_fv parse issue:", e);
     }
   }
 });
