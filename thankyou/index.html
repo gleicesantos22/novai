@@ -79,9 +79,29 @@
             const donationSpan=document.querySelector('.donation-info span');
             if(donationSpan)donationSpan.textContent='You donated $'+amount;
 
-            const totalGoal=100000;
-            const totalDonorsAt100=2930;
-            let donationPercentage=47;
+            // Get fundraiser values directly from cookie
+            let totalGoal, totalDonorsAt100, donationPercentage;
+            
+            try {
+                const fundraiserValues = getCookie('fundraiserValues');
+                if (fundraiserValues) {
+                    const valuesObj = JSON.parse(decodeURIComponent(fundraiserValues));
+                    totalGoal = valuesObj.totalGoal;
+                    totalDonorsAt100 = valuesObj.totalDonorsAt100;
+                    donationPercentage = valuesObj.donationPercentage;
+                } else {
+                    // Only use defaults if cookie doesn't exist at all
+                    totalGoal = 100000;
+                    totalDonorsAt100 = 2930;
+                    donationPercentage = 47;
+                }
+            } catch(e) {
+                console.log("Error parsing fundraiserValues cookie:", e);
+                // Fallback to defaults if parsing fails
+                totalGoal = 100000;
+                totalDonorsAt100 = 2930;
+                donationPercentage = 47;
+            }
 
             try{
                 const cookieValue=getCookie('myDonationCookie');
